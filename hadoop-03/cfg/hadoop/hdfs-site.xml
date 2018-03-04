@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<!--
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License. See accompanying LICENSE file.
+-->
+
+<!-- Put site-specific property overrides in this file. -->
+
+<configuration>
+	<property>
+		<name>dfs.replication</name>
+		<value>2</value>
+		<description>指定DataNode存储block的副本数量。默认值是3个，我们现在有4个DataNode，该值不大于4即可</description>
+	</property>
+	<property>
+		<name>dfs.permissions.enabled</name>
+		<value>false</value>
+		<description>注：如果还有权限问题，请执行下“/root/hadoop-2.7.2/bin/hdfs dfs -chmod -R 777 /”命令</description>
+	</property>
+	<property>
+		<name>dfs.nameservices</name>
+		<value>cluster1</value>
+		<description>使用federation时，使用了2个HDFS集群。这里抽象出两个NameService实际上就是给这2个HDFS集群起了个别名。名字可以随便起，相互不重复即可。多个集群时使用逗号分开。注：这里的命名只是个逻辑空间的概念，不是集群1、集群2两集群，应该是 cluster1+cluster2 才组成一个集群，cluster1、cluster2只是集群的一部分，从逻辑上将整个集群分成了两部分（当然还要以加一个高可用NameNode进来，组成第三部分），cluster1、cluster2是否属于同一集群，则是是clusterID决定的，clusterID这个值是在格式化NameNode时指定的，请参照namenode格式化和启动</description>
+	</property>
+	<property>
+		<name>dfs.ha.namenodes.cluster1</name>
+		<value>nn1,nn2</value>
+		<description>集群1里面NameNode的逻辑名，注：只是随便命的逻辑名，这里不是真实的NameNode主机名，后面配置才指定到主机</description>
+	</property>
+	<property>
+		<name>dfs.namenode.rpc-address.cluster1.nn1</name>
+		<value>hadoop-01:9820</value>
+		<description>9820为HDFS 客户端接入地址（包括命令行与程序）</description>
+	</property>
+	<property>
+		<name>dfs.namenode.rpc-address.cluster1.nn2</name>
+		<value>hadoop-02:9820</value>
+	</property>
+	<property>
+		<name>dfs.namenode.http-address.cluster1.nn1</name>
+		<value>hadoop-01:9870</value>
+		<description> namenode web的接入地址</description>
+	</property>
+	<property>
+		<name>dfs.namenode.http-address.cluster1.nn2</name>
+		<value>hadoop-02:9870</value>
+	</property>
+	<property>
+		<name>dfs.namenode.shared.edits.dir</name>
+		<value>qjournal://hadoop-01:8485;hadoop-02:8485;hadoop-03:8485/cluster1</value>
+		<description>指定cluster2的两个NameNode共享edits文件目录时，使用的JournalNode集群信息。 node3\node4主机中使用这个配置</description>
+	</property>
+	<property>
+		<name>dfs.ha.automatic-failover.enabled.cluster1</name>
+		<value>true</value>
+		<description>指定cluster1是否启动自动故障恢复，即当NameNode出故障时，是否自动切换到另一台NameNode</description>
+	</property>
+	<property>
+		<name>dfs.client.failover.proxy.provider.cluster1</name>
+		<value>org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider</value>
+		<description>指定cluster1出故障时，哪个Java类负责执行故障切换</description>
+	</property>
+	<property>
+		<name>dfs.journalnode.edits.dir</name>
+		<value>/opt/hadoop/tmp/journal</value>
+		<description>指定JournalNode自身存储数据的磁盘路径</description>
+	</property>
+	<property>
+		<name>dfs.ha.fencing.methods</name>
+		<value>sshfence</value>
+		<description>NameNode使用SSH进行主备切换</description>
+	</property>
+	<property>
+		<name>dfs.ha.fencing.ssh.private-key-files</name>
+		<value>/root/.ssh/id_rsa</value>
+		<description>如果使用ssh进行故障切换，使用ssh通信时用的密钥存储的位置</description>
+	</property>
+</configuration>

@@ -1,0 +1,63 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
+VAGRANTFILE_API_VERSION = "2"
+
+$script = <<SCRIPT
+  sed -i -- 's|hadoop-01|hadoop-02|g' /etc/sysconfig/network && \
+  sed -i -- 's|hadoop-01|hadoop-02|g' /etc/hostname && \
+  hostname hadoop-02 && \
+  hostnamectl set-hostname "hadoop-02" && \
+  yum install -y nc && \
+  systemctl stop firewalld && \
+  systemctl disable firewalld && \
+  mkdir -p /opt/zookeeper/zkData && \
+  cd /opt/zookeeper/conf && \
+  command cp -f /vagrant/cfg/zookeeper/zoo.cfg ./zoo.cfg && \
+  mkdir -p /opt/zookeeper/zkData && \
+  touch /opt/zookeeper/zkData/myid && \
+  echo 2 > /opt/zookeeper/zkData/myid && \
+  sed -i -- 's|nohup "$JAVA"|nohup "$JAVA" "-Dzookeeper.DigestAuthenticationProvider.superDigest=super.Q9YtF+3h9Ko5UNT8apBWr8hovH4="|g' /opt/zookeeper/bin/zkServer.sh && \
+  command cp -rf /vagrant/cfg/hadoop /opt/hadoop/etc/ && \
+  command cp -f /vagrant/systemctl/root/st*.sh /opt/ && \
+  command cp -f /vagrant/cfg/hosts/hosts-iphone /etc/hosts
+SCRIPT
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  # copied directly from vagrant init chef/centos-6.5
+  config.vm.box = "hadoop-base"
+  
+  config.vm.box_check_update = false
+  # config.vbguest.auto_update = false
+  config.vbguest.auto_update = true
+  
+  # workaround the vagrant 1.8.5 bug
+  config.ssh.insert_key = false
+
+  config.vm.synced_folder ".", "/vagrant", type: "virtualbox"
+
+  # change memory size
+  config.vm.provider "virtualbox" do |v|
+    v.customize ['modifyvm', :id, '--memory', '1024', '--cpus', '1', '--cableconnected1', 'on']
+    v.name = "hadoop-02"
+  end
+
+  # Oracle port forwarding
+  #config.vm.network "public_network", bridge: "en5: Thunderbolt Ethernet", use_dhcp_assigned_default_route: true
+  # config.vm.network "public_network", bridge: "en0: Wi-Fi (AirPort)", ip: "192.168.0.20", use_dhcp_assigned_default_route: true
+  config.vm.network "public_network", bridge: "en0: Wi-Fi (AirPort)", ip: "172.20.10.4", use_dhcp_assigned_default_route: true
+  # config.vm.network "public_network", bridge: "en0: Wi-Fi (AirPort)", use_dhcp_assigned_default_route: true
+  # config.vm.network "forwarded_port", guest: 9870, host: 9870, auto_correct: true
+
+  config.vm.provision "shell", inline: $script
+
+  # Provision everything on the first run
+  # config.vm.provision "shell", path: "scripts/install.sh"
+
+  # if Vagrant.has_plugin?("vagrant-proxyconf")
+  #   config.proxy.http     = "http://proxy.example.com/"
+  #   config.proxy.https    = "http://proxy.example.com/"
+  #   config.proxy.no_proxy = "localhost,127.0.0.1"
+  # end
+end
